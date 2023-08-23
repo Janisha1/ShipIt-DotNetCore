@@ -13,7 +13,14 @@ That file should contain a property named `POSTGRES_CONNECTION_STRING`.
 It should look something like this:
 ```
 POSTGRES_CONNECTION_STRING=Server=127.0.0.1;Port=5432;Database=your_database_name;User Id=your_database_user; Password=your_database_password;
+
 ```
+Within each project run the following commands:
+dotnet add package Microsoft.EntityFrameworkCore
+dotnet add package Microsoft.EntityFrameworkCore.Design
+dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL
+
+May need to amend versions in the ShipIt.csproj
 
 ## Running The API
 Once set up, simply run dotnet run in the ShipIt directory.
