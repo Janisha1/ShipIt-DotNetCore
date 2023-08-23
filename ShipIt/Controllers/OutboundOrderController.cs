@@ -1,8 +1,8 @@
 ﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
- using Microsoft.AspNetCore.Mvc;
- using ShipIt.Exceptions;
+using Microsoft.AspNetCore.Mvc;
+using ShipIt.Exceptions;
 using ShipIt.Models.ApiModels;
 using ShipIt.Repositories;
 
@@ -23,7 +23,7 @@ namespace ShipIt.Controllers
         }
 
         [HttpPost("")]
-        public void Post([FromBody] OutboundOrderRequestModel request)
+        public OutboundOrderResponseModel Post([FromBody] OutboundOrderRequestModel request)
         {
             Log.Info(String.Format("Processing outbound order: {0}", request));
 
@@ -94,6 +94,29 @@ namespace ShipIt.Controllers
             }
 
             _stockRepository.RemoveStock(request.WarehouseId, lineItems);
+            var numberOfTrucks = CalculateNumberOfTrucks(gtins, orderLines);
+            return new OutboundOrderResponseModel
+            { EstimatedNumberOfTrucks = numberOfTrucks };
+        }
+
+
+        public int CalculateNumberOfTrucks(List<string> gtins, IEnumerable<OrderLine> orderLines)
+        {
+
+            float truckMaxWeightKg = 2000;
+            float totalWeight = 0;
+            var productDataModels = _productRepository.GetProductsByGtin(gtins);
+            var products = productDataModels.ToDictionary(p => p.Gtin, p => new Product(p));
+            foreach (var orderLine in orderLines)
+            {
+                if (products.ContainsKey(orderLine.gtin))
+                {
+                    var product = products[orderLine.gtin];
+                    totalWeight += product.Weight * orderLine.quantity;
+                }
+            }
+            float totalWeightKg = totalWeight / 1000;
+            return (int)Math.Ceiling(totalWeightKg / truckMaxWeightKg);
         }
     }
 }
