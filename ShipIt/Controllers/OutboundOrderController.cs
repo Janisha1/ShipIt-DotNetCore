@@ -95,8 +95,14 @@ namespace ShipIt.Controllers
 
             _stockRepository.RemoveStock(request.WarehouseId, lineItems);
             var numberOfTrucks = CalculateNumberOfTrucks(gtins, orderLines);
+            var truckShipments =
+
+
             return new OutboundOrderResponseModel
-            { EstimatedNumberOfTrucks = numberOfTrucks };
+            {
+                EstimatedNumberOfTrucks = numberOfTrucks,
+                TruckShipments = truckShipments
+            };
         }
 
 
@@ -114,9 +120,27 @@ namespace ShipIt.Controllers
                     var product = products[orderLine.gtin];
                     totalWeight += product.Weight * orderLine.quantity;
                 }
+
             }
             float totalWeightKg = totalWeight / 1000;
             return (int)Math.Ceiling(totalWeightKg / truckMaxWeightKg);
+        }
+
+        public List<TruckResponseModel> GetTruckShipments(List<string> gtins, IEnumerable<OrderLine> orderLines, int numberOfTrucks)
+        {
+            var productDataModels = _productRepository.GetProductsByGtin(gtins);
+            var products = productDataModels.ToDictionary(p => p.Gtin, p => new Product(p));
+            var truckShipments = new List<TruckResponseModel>();
+            foreach (var orderLine in orderLines)
+            {
+                if (products.ContainsKey(orderLine.gtin))
+                {
+                    var product = products[orderLine.gtin];
+
+
+                }
+
+            }
         }
     }
 }

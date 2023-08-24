@@ -8,7 +8,7 @@ namespace ShipIt.Models.ApiModels
 {
     public class OutboundOrderResponseModel
     {
-
+        public List<TruckResponseModel> TruckShipments { get; set; }
         public int EstimatedNumberOfTrucks { get; set; }
     }
 }
