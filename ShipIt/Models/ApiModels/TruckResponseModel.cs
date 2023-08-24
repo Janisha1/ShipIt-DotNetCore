@@ -7,7 +7,4 @@ public class TruckResponseModel
 {
    public Dictionary<string, int> gtinQuantities { get; set; }
    public float TotalWeightKg { get; set; }
-
-   
-
 }

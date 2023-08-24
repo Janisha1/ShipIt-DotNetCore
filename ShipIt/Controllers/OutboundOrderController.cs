@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.TagHelpers.Cache;
 using ShipIt.Exceptions;
 using ShipIt.Models.ApiModels;
 using ShipIt.Repositories;
@@ -94,53 +95,62 @@ namespace ShipIt.Controllers
             }
 
             _stockRepository.RemoveStock(request.WarehouseId, lineItems);
-            var numberOfTrucks = CalculateNumberOfTrucks(gtins, orderLines);
-            var truckShipments =
+            var truckShipments = GetTruckShipments(gtins, orderLines);
+            var numberOfTrucks = CalculateNumberOfTrucks(truckShipments);
 
 
             return new OutboundOrderResponseModel
             {
-                EstimatedNumberOfTrucks = numberOfTrucks,
-                TruckShipments = truckShipments
+                TruckShipments = truckShipments,
+                RequiredNumberOfTrucks = numberOfTrucks
             };
         }
 
 
-        public int CalculateNumberOfTrucks(List<string> gtins, IEnumerable<OrderLine> orderLines)
+        public int CalculateNumberOfTrucks(List<TruckResponseModel> trucks)
         {
-
-            float truckMaxWeightKg = 2000;
-            float totalWeight = 0;
-            var productDataModels = _productRepository.GetProductsByGtin(gtins);
-            var products = productDataModels.ToDictionary(p => p.Gtin, p => new Product(p));
-            foreach (var orderLine in orderLines)
-            {
-                if (products.ContainsKey(orderLine.gtin))
-                {
-                    var product = products[orderLine.gtin];
-                    totalWeight += product.Weight * orderLine.quantity;
-                }
-
-            }
-            float totalWeightKg = totalWeight / 1000;
-            return (int)Math.Ceiling(totalWeightKg / truckMaxWeightKg);
+            return trucks.Count;
         }
 
-        public List<TruckResponseModel> GetTruckShipments(List<string> gtins, IEnumerable<OrderLine> orderLines, int numberOfTrucks)
+        public List<TruckResponseModel> GetTruckShipments(List<string> gtins, IEnumerable<OrderLine> orderLines)
         {
             var productDataModels = _productRepository.GetProductsByGtin(gtins);
             var products = productDataModels.ToDictionary(p => p.Gtin, p => new Product(p));
+            var maxTruckWeightKg = 2000;
+
             var truckShipments = new List<TruckResponseModel>();
-            foreach (var orderLine in orderLines)
-            {
-                if (products.ContainsKey(orderLine.gtin))
+            if (truckShipments.Count == 0)
                 {
-                    var product = products[orderLine.gtin];
-
-
+                    var truckShipment = new TruckResponseModel();
+                    truckShipments.Add(truckShipment);
                 }
 
+
+            foreach (var truck in truckShipments)
+            {
+                foreach (var orderLine in orderLines)
+                {
+                    float totalProductWeightKg = 0;
+                    if (products.ContainsKey(orderLine.gtin))
+                    {
+                        var product = products[orderLine.gtin];
+                        totalProductWeightKg = product.Weight * orderLine.quantity;
+                    }
+
+                    if (truck.TotalWeightKg + totalProductWeightKg <= maxTruckWeightKg)
+                    {
+                        truck.gtinQuantities.Add(orderLine.gtin, orderLine.quantity);
+                        truck.TotalWeightKg += totalProductWeightKg;
+                    } else
+                    {
+                        var truckShipment = new TruckResponseModel();
+                        truckShipments.Add(truckShipment);
+                        truckShipment.gtinQuantities.Add(orderLine.gtin, orderLine.quantity);
+                        truckShipment.TotalWeightKg += totalProductWeightKg;
+                    }
+                }
             }
+            return truckShipments;
         }
     }
 }
