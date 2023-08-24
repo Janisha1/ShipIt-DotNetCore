@@ -1,0 +1,4 @@
+-- To be implemented
+ALTER TABLE em ADD COLUMN em_id SERIAL;
+ALTER TABLE em DROP CONSTRAINT em_pkey;
+ALTER TABLE em ADD PRIMARY KEY (em_id);
