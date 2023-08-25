@@ -119,35 +119,38 @@ namespace ShipIt.Controllers
             var maxTruckWeightKg = 2000;
 
             var truckShipments = new List<TruckResponseModel>();
-            if (truckShipments.Count == 0)
+
+
+            foreach (var orderLine in orderLines)
+            {
+                float totalProductWeightKg = 0;
+                if (products.ContainsKey(orderLine.gtin))
                 {
-                    var truckShipment = new TruckResponseModel();
-                    truckShipments.Add(truckShipment);
+                    var product = products[orderLine.gtin];
+                    totalProductWeightKg = product.Weight * orderLine.quantity / 1000;
                 }
 
-
-            foreach (var truck in truckShipments)
-            {
-                foreach (var orderLine in orderLines)
+                var productAdded = false;
+                foreach (var truck in truckShipments)
                 {
-                    float totalProductWeightKg = 0;
-                    if (products.ContainsKey(orderLine.gtin))
-                    {
-                        var product = products[orderLine.gtin];
-                        totalProductWeightKg = product.Weight * orderLine.quantity;
-                    }
-
                     if (truck.TotalWeightKg + totalProductWeightKg <= maxTruckWeightKg)
                     {
                         truck.gtinQuantities.Add(orderLine.gtin, orderLine.quantity);
                         truck.TotalWeightKg += totalProductWeightKg;
-                    } else
-                    {
-                        var truckShipment = new TruckResponseModel();
-                        truckShipments.Add(truckShipment);
-                        truckShipment.gtinQuantities.Add(orderLine.gtin, orderLine.quantity);
-                        truckShipment.TotalWeightKg += totalProductWeightKg;
+                        productAdded = true;
+                        break;
                     }
+                }
+                if (!productAdded)
+                {
+                    var nextTruckShipment = new TruckResponseModel
+                    {
+                        gtinQuantities = new Dictionary<string, int>(),
+                        TotalWeightKg = 0
+                    };
+                    truckShipments.Add(nextTruckShipment);
+                    nextTruckShipment.gtinQuantities.Add(orderLine.gtin, orderLine.quantity);
+                    nextTruckShipment.TotalWeightKg += totalProductWeightKg;
                 }
             }
             return truckShipments;
