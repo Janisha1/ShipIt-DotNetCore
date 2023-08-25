@@ -153,11 +153,10 @@ namespace ShipItTest
             try
             {
                 employeeController.Post(addEmployeesRequest);
-                Assert.Fail("Expected exception to be thrown.");
             }
             catch (Exception)
             {
-                Assert.IsTrue(true);
+                Assert.Fail("Expected Adding Duplicate Names to be possible.");
             }
         }
 
